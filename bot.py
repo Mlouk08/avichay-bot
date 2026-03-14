@@ -11,9 +11,7 @@ CHECK_EVERY_SECONDS = 300
 tg_bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
 RSSHUB_INSTANCES = [
-    "https://rsshub.app",
-    "https://rss.shab.fun",
-    "https://rsshub.rssforever.com",
+    rsshub.railway.internal,
 ]
 
 HEADERS = {
