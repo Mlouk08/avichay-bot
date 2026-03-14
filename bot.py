@@ -6,7 +6,7 @@ from telegram import Bot
 # ============================================================
 TELEGRAM_BOT_TOKEN  = "8764676407:AAHwSPSO0hZ1nSERDIbm-w6WYl6N2qa1VdM"
 TELEGRAM_CHANNEL    = "@lebanese_tehdidet"
-TARGET_USERNAME     = "AvichayAdraee"
+TARGET_USERNAME     = "ALJADEEDNEWS"
 CHECK_EVERY_SECONDS = 60
 NITTER_RSS = f"https://nitter.tiekoetter.com/{TARGET_USERNAME}/rss"
 # ============================================================
