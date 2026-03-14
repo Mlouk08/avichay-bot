@@ -3,7 +3,7 @@ import httpx
 import os
 from telegram import Bot
 
-TELEGRAM_BOT_TOKEN  = os.environ.get("8764676407:AAHwSPSO0hZ1nSERDIbm-w6WYl6N2qa1VdM")
+TELEGRAM_BOT_TOKEN = "8764676407:AAHwSPSO0hZ1nSERDIbm-w6WYl6N2qa1VdM"
 TELEGRAM_CHANNEL    = "@lebanese_tehdidet"
 TARGET_USERNAME     = "ALJADEEDNEWS"
 CHECK_EVERY_SECONDS = 300
