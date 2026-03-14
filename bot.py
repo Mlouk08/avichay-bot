@@ -5,7 +5,7 @@ from telegram import Bot
 # ============================================================
 TELEGRAM_BOT_TOKEN  = "8764676407:AAHwSPSO0hZ1nSERDIbm-w6WYl6N2qa1VdM"
 TELEGRAM_CHANNEL    = "@lebanese_tehdidet"
-TARGET_USERNAME     = "AvichayAdraee"
+TARGET_USERNAME     = "ALJADEEDNEWS"
 CHECK_EVERY_SECONDS = 300
 
 tg_bot = Bot(token=TELEGRAM_BOT_TOKEN)
@@ -22,10 +22,14 @@ async def get_tweets():
         for attempt in range(3):
             r = await client.get(url)
             print(f"🔍 Status: {r.status_code}")
+            print(f"🔍 Body preview: {r.text[:500]}")
             if r.status_code == 429:
                 print(f"⏳ Rate limited, waiting 60s before retry...")
                 await asyncio.sleep(60)
                 continue
+            if not r.text.strip():
+                print("⚠️ Empty response body")
+                return []
             data = r.json()
             entries = data.get("timeline", {}).get("entries", [])
             tweets = []
