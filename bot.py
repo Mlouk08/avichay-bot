@@ -1,62 +1,65 @@
-
 import asyncio
-import feedparser
+import httpx
 from telegram import Bot
 
 # ============================================================
 TELEGRAM_BOT_TOKEN  = "8764676407:AAHwSPSO0hZ1nSERDIbm-w6WYl6N2qa1VdM"
 TELEGRAM_CHANNEL    = "@lebanese_tehdidet"
-TARGET_USERNAME     = "ALJADEEDNEWS"
+TARGET_USERNAME     = "AvichayAdraee"
 CHECK_EVERY_SECONDS = 60
-NITTER_INSTANCES = [
-    "https://nitter.tiekoetter.com",
-    "https://nitter.poast.org",
-    "https://nitter.privacydev.net",
-    "https://nitter.cz",
-]
 # ============================================================
 
 tg_bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
-def get_feed():
-    for instance in NITTER_INSTANCES:
-        url = f"{instance}/{TARGET_USERNAME}/rss"
-        feed = feedparser.parse(url)
-        if feed.entries:
-            print(f"✅ Using instance: {instance} ({len(feed.entries)} entries)")
-            return feed, instance
-        else:
-            print(f"⚠️ No entries from {instance}, trying next...")
-    return None, None
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "application/json",
+}
+
+async def get_tweets():
+    url = f"https://syndication.twitter.com/srv/timeline-profile/screen-name/{TARGET_USERNAME}"
+    async with httpx.AsyncClient(headers=HEADERS, timeout=30) as client:
+        r = await client.get(url)
+        data = r.json()
+        entries = data.get("timeline", {}).get("entries", [])
+        tweets = []
+        for entry in entries:
+            tweet = entry.get("content", {}).get("tweet", {})
+            if tweet:
+                tweets.append({
+                    "id": tweet.get("id_str"),
+                    "text": tweet.get("full_text", tweet.get("text", "")),
+                })
+        return tweets
 
 async def run():
     print(f"🤖 Bot started. Watching @{TARGET_USERNAME} every {CHECK_EVERY_SECONDS}s...")
     seen_ids = set()
 
-    feed, instance = get_feed()
-    if feed:
-        for entry in feed.entries:
-            seen_ids.add(entry.id)
-        print(f"📌 Seeded with {len(seen_ids)} existing tweets")
-    else:
-        print("⚠️ All Nitter instances returned 0 entries at startup")
+    tweets = await get_tweets()
+    for t in tweets:
+        seen_ids.add(t["id"])
+    print(f"📌 Seeded with {len(seen_ids)} existing tweets")
 
     while True:
         await asyncio.sleep(CHECK_EVERY_SECONDS)
         try:
-            feed, instance = get_feed()
-            if not feed:
-                print("⚠️ All instances failed this round, will retry next cycle")
-                continue
-            for entry in reversed(feed.entries):
-                if entry.id not in seen_ids:
-                    seen_ids.add(entry.id)
-                    url = entry.link.replace(instance.replace("https://", ""), "x.com")
-                    msg = f"🚨 *Warning from Avikhay*\n\n{entry.title}\n\n[View post]({url})"
+            tweets = await get_tweets()
+            for tweet in reversed(tweets):
+                if tweet["id"] not in seen_ids:
+                    seen_ids.add(tweet["id"])
+                    url = f"https://x.com/{TARGET_USERNAME}/status/{tweet['id']}"
+                    msg = f"🚨 *Warning from Avikhay*\n\n{tweet['text']}\n\n[View post]({url})"
                     await tg_bot.send_message(chat_id=TELEGRAM_CHANNEL, text=msg, parse_mode="Markdown")
-                    print(f"✅ Sent: {entry.title[:60]}")
+                    print(f"✅ Sent: {tweet['text'][:60]}")
         except Exception as e:
             print(f"⚠️ Error: {e}")
 
 if __name__ == "__main__":
     asyncio.run(run())
+```
+
+Also update your `requirements.txt`:
+```
+httpx
+python-telegram-bot
