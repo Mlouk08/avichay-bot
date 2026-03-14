@@ -57,9 +57,7 @@ async def run():
 
 if __name__ == "__main__":
     asyncio.run(run())
-```
 
 Also update your `requirements.txt`:
-```
 httpx
 python-telegram-bot
