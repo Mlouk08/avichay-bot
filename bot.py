@@ -7,19 +7,21 @@ TELEGRAM_BOT_TOKEN  = "8764676407:AAHwSPSO0hZ1nSERDIbm-w6WYl6N2qa1VdM"
 TELEGRAM_CHANNEL    = "@lebanese_tehdidet"
 TARGET_USERNAME     = "AvichayAdraee"
 CHECK_EVERY_SECONDS = 60
-# ============================================================
 
 tg_bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "application/json",
+    "Accept": "application/json, text/javascript, */*",
+    "Referer": "https://x.com",
 }
 
 async def get_tweets():
-    url = f"https://syndication.twitter.com/srv/timeline-profile/screen-name/{TARGET_USERNAME}"
-    async with httpx.AsyncClient(headers=HEADERS, timeout=30) as client:
+    url = f"https://syndication.twitter.com/srv/timeline-profile/screen-name/{TARGET_USERNAME}?count=20&showReplies=false"
+    async with httpx.AsyncClient(headers=HEADERS, timeout=30, follow_redirects=True) as client:
         r = await client.get(url)
+        print(f"🔍 Status: {r.status_code}")
+        print(f"🔍 Response preview: {r.text[:300]}")
         data = r.json()
         entries = data.get("timeline", {}).get("entries", [])
         tweets = []
@@ -36,10 +38,13 @@ async def run():
     print(f"🤖 Bot started. Watching @{TARGET_USERNAME} every {CHECK_EVERY_SECONDS}s...")
     seen_ids = set()
 
-    tweets = await get_tweets()
-    for t in tweets:
-        seen_ids.add(t["id"])
-    print(f"📌 Seeded with {len(seen_ids)} existing tweets")
+    try:
+        tweets = await get_tweets()
+        for t in tweets:
+            seen_ids.add(t["id"])
+        print(f"📌 Seeded with {len(seen_ids)} existing tweets")
+    except Exception as e:
+        print(f"⚠️ Startup error: {e}")
 
     while True:
         await asyncio.sleep(CHECK_EVERY_SECONDS)
@@ -57,5 +62,3 @@ async def run():
 
 if __name__ == "__main__":
     asyncio.run(run())
-
-
