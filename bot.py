@@ -11,7 +11,7 @@ CHECK_EVERY_SECONDS = 300
 tg_bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
 RSSHUB_INSTANCES = [
-    "https://rsshub-production-281f.up.railway.app",
+    "http://rsshub-production-8c95.up.railway.app",
 ]
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
