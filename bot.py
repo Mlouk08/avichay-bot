@@ -1,73 +1,48 @@
 import asyncio
-import httpx
 import os
-from telegram import Bot
+from telegram.ext import Application, MessageHandler, filters
 
-TELEGRAM_BOT_TOKEN = "8764676407:AAHwSPSO0hZ1nSERDIbm-w6WYl6N2qa1VdM"
-TELEGRAM_CHANNEL    = "@lebanese_tehdidet"
-TARGET_USERNAME     = "ALJADEEDNEWS"
-CHECK_EVERY_SECONDS = 300
+SOURCE_CHANNEL     = "@IDFSpokespersonArabic"  # replace with his channel
+TARGET_CHANNEL     = "@lebanese_tehdidet"
+TELEGRAM_BOT_TOKEN = os.environ.get("8764676407:AAHwSPSO0hZ1nSERDIbm-w6WYl6N2qa1VdM")
 
-tg_bot = Bot(token=TELEGRAM_BOT_TOKEN)
-
-RSSHUB_INSTANCES = [
-    "http://rsshub-production-8c95.up.railway.app",
+# Keywords to watch for (English, Arabic, Hebrew)
+KEYWORDS = [
+    "hezbollah",
+    "حزب الله",
+    "חיזבאללה",
+    "hizballah",
+    "hizb",
 ]
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-}
 
-async def get_tweets():
-    for instance in RSSHUB_INSTANCES:
-        url = f"{instance}/twitter/user/{TARGET_USERNAME}"
-        try:
-            async with httpx.AsyncClient(headers=HEADERS, timeout=30, follow_redirects=True) as client:
-                r = await client.get(url)
-                print(f"🔍 {instance} → Status: {r.status_code}")
-                if r.status_code == 200 and "<item>" in r.text:
-                    print(f"✅ Got feed from {instance}")
-                    return parse_rss(r.text), instance
-        except Exception as e:
-            print(f"⚠️ {instance} failed: {e}")
-    return [], None
+def contains_keyword(text):
+    if not text:
+        return False
+    text_lower = text.lower()
+    return any(keyword.lower() in text_lower for keyword in KEYWORDS)
 
-def parse_rss(xml):
-    import re
-    tweets = []
-    items = re.findall(r"<item>(.*?)</item>", xml, re.DOTALL)
-    for item in items:
-        title = re.search(r"<title><!\[CDATA\[(.*?)\]\]></title>", item, re.DOTALL)
-        link  = re.search(r"<link>(.*?)</link>", item)
-        guid  = re.search(r"<guid>(.*?)</guid>", item)
-        if title and link and guid:
-            tweets.append({
-                "id": guid.group(1),
-                "text": title.group(1).strip(),
-                "url": link.group(1).strip(),
-            })
-    return tweets
+async def forward(update, context):
+    post = update.channel_post
+    if not post:
+        return
 
-async def run():
-    print(f"🤖 Bot started. Watching @{TARGET_USERNAME} every {CHECK_EVERY_SECONDS}s...")
-    seen_ids = set()
+    text = post.text or post.caption or ""
 
-    tweets, instance = await get_tweets()
-    for t in tweets:
-        seen_ids.add(t["id"])
-    print(f"📌 Seeded with {len(seen_ids)} existing tweets")
+    if contains_keyword(text):
+        await context.bot.forward_message(
+            chat_id=TARGET_CHANNEL,
+            from_chat_id=post.chat_id,
+            message_id=post.message_id
+        )
+        print(f"✅ Forwarded: {text[:60]}")
+    else:
+        print(f"⏭️ Skipped: {text[:60]}")
 
-    while True:
-        await asyncio.sleep(CHECK_EVERY_SECONDS)
-        try:
-            tweets, instance = await get_tweets()
-            for tweet in reversed(tweets):
-                if tweet["id"] not in seen_ids:
-                    seen_ids.add(tweet["id"])
-                    msg = f"🚨 *Warning from Avikhay*\n\n{tweet['text']}\n\n[View post]({tweet['url']})"
-                    await tg_bot.send_message(chat_id=TELEGRAM_CHANNEL, text=msg, parse_mode="Markdown")
-                    print(f"✅ Sent: {tweet['text'][:60]}")
-        except Exception as e:
-            print(f"⚠️ Error: {e}")
+def main():
+    print("🤖 Bot started. Filtering for Hezbollah mentions...")
+    app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    app.add_handler(MessageHandler(filters.ALL, forward))
+    app.run_polling()
 
 if __name__ == "__main__":
-    asyncio.run(run())
+    main()
