@@ -4,7 +4,7 @@ from telegram.ext import Application, MessageHandler, filters
 
 SOURCE_CHANNEL     = "@test08102001"  # replace with his channel
 TARGET_CHANNEL     = "@lebanese_tehdidet"
-TELEGRAM_BOT_TOKEN = "8764676407:AAHwSPSO0hZ1nSERDIbm-w6WYl6N2qa1VdM"
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 
 # Keywords to watch for (English, Arabic, Hebrew)
 KEYWORDS = [
